@@ -1,22 +1,9 @@
 # Lipolysis-regulates-major-transcriptional-programs-in-brown-adipocytes
-Lipolysis regulates major transcriptional programs in brown adipocytes
 
-Scripts for reproduction of manuscript figures
+
 The scripts in this repository contains major codes that was run to create the figures in the manuscript.
 Please note that some of the algorithms are non-deterministic, which means that results vary slightly from run to run.Due to the non-deterministic nature, your figures may not look exactly like the figures in the paper.
 
-Lasse K. Markussen1,2,3, Elizabeth A. Rondini4, Olivia Sveidahl Johansen2,5,6, Jesper G. S. Madsen1,3, Elahu G. Sustarsic5, Ann-Britt Marcher1,2,3 Jacob B. Hansen7, Zachary Gerhart-Hines2,5,6,James G. Granneman4* & Susanne Mandrup1,2,3*
-
-1Department of Biochemistry and Molecular Biology, University of Southern Denmark, Odense, DK                                          
-2Novo Nordisk Foundation Center for Adipocyte Signaling (AdipoSign), Odense, DK
-3Center for Functional Genomics and Tissue Plasticity (ATLAS), Odense, DK
-4Center for Molecular Medicine and Genetics, Wayne State University, Detroit, US     
-5Novo Nordisk Foundation Center for Basic Metabolic Research, University of Copenhagen, Copenhagen, DK 
-6Embark Biotech ApS, Copenhagen, DK					              
-6Center for Functional Genomics and Tissue Plasticity (ATLAS), Odense, DK
-7Department of Biology, University of Copenhagen, Copenhagen, DK
-
-*Correspondence toThese authors contributed equally: James G. Granneman (J.G.G) (jgranne@med.wayne.edu), Susanne Mandrup(S.M.) (s.mandrup@bmb.sdu.dk)
 
 
 Summary:
