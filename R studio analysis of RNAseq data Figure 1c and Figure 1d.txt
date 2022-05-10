@@ -1,0 +1,211 @@
+#Setting up working directory
+setwd("C:/Users/lassekm/OneDrive - Syddansk Universitet/Skrivebord/Lipolysis_DK")
+
+#Making a matrix (condition, replicate and name)
+coldata <- matrix(nrow=18, ncol=3)
+colnames(coldata) <- c("Condition", "Replicate", "Names")
+coldata[,1] <- c(rep("DMSO",3), rep("ISO",3), rep("C162",3), rep("DMSO+Lip",3), rep("ISO+Lip",3),rep("C162+Lip",3)) 
+coldata[,2] <- rep(c("a","b","c"),6)  
+coldata[,3] <- paste0(coldata[,1],"_", coldata[,2])
+
+#Import the text file with sequencing counts
+data <- read.delim("C:/Users/lassekm/OneDrive - Syddansk Universitet/Skrivebord/Lipolysis_DK/Lipolysis_DK.txt") 
+
+#Changing the order of the samples
+data <- data[,c(1,2,3,4,5,6,7,8,9,15,21,10,16,22,11,17,23,12,18,24,13,19,25,14,20,26)]
+
+#making the RefSeq ID the rownames of the dataframe.
+rownames(data) <- data$Symbol
+
+#Making the DESeq2 countdata object - this should only include counts(check the "data" frame and see that it really is row 9 to 26.
+countdata <- data[,9:26] 
+
+#Naming the columns. Using information from previous coldata file (above)
+colnames(countdata) <- coldata[,3] 
+
+#Sorting out everything which in none of the conditions exceeds 10 reads 
+countdata <- as.matrix(countdata[apply(countdata,1,max)>10,]) 
+
+#You probably have to install it the first time 
+library(DESeq2)
+
+#dds analysis
+dds <- DESeqDataSetFromMatrix(countdata, coldata, design=~Replicate+Condition)
+dds <- DESeq(dds)
+
+#rlog transforming the data
+rld <- rlog(dds)
+library(ggplot2)
+
+#Making PCA plot.
+data <- plotPCA(rld, intgroup=c("Condition", "Replicate"), returnData=TRUE)
+percentVar <- round(100 * attr(data, "percentVar"))
+ggplot(data, aes(PC1, PC2, color=Condition, shape=Replicate)) +
+  geom_point(size=8) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance"))
+
+#Making rlog values to be used later (are nice to have for clustering)
+rld <- assay(rlog(dds)) 
+colnames(rld) <- paste0("rlog_",coldata[,3])
+
+#Calculating an average rlog value for each condition
+for(i in c(1,4,7,10,13,16)){
+  tmp <- (rld[,i]+rld[,i+1]+rld[,i+2])/3
+  rld <- cbind(rld,tmp)
+}
+
+
+colnames(rld)[19:24] <- paste0("rlog_average_", coldata[c(1,4,7,10,13,16),1])
+
+#Making normalized counts to be used later 
+counts.norm <- counts(dds, normalized = TRUE) 
+for(i in c(1,4,7,10,13,16)){
+  tmp <- (counts.norm[,i]+counts.norm[,i+1]+counts.norm[,i+2])/3
+  counts.norm <- cbind(counts.norm,tmp)
+}
+
+colnames(counts.norm)[19:24] <- paste0("counts_average_", coldata[c(1,4,7,10,13,16),1])
+
+#Making one big matrix with all information so far
+data.1 <- cbind(countdata, rld, counts.norm)
+
+#Making contrasts, and adding them to data.1 dataframe. The data.1 dataframe will end up containing all my information
+tmp <- as.data.frame(results(dds, contrast=c("Condition", "DMSO+Lip", "DMSO")))
+colnames(tmp) <- paste0("DMSO+Lip_vs_DMSO_", colnames(tmp))
+data.1 <- cbind(data.1, tmp)
+tmp <- as.data.frame(results(dds, contrast=c("Condition", "ISO", "DMSO")))
+colnames(tmp) <- paste0("ISO_vs_DMSO_", colnames(tmp))
+data.1 <- cbind(data.1, tmp)
+tmp <- as.data.frame(results(dds, contrast=c("Condition", "ISO+Lip", "DMSO")))
+colnames(tmp) <- paste0("ISO+Lip_vs_DMSO_", colnames(tmp))
+data.1 <- cbind(data.1, tmp)
+tmp <- as.data.frame(results(dds, contrast=c("Condition", "C162" , "DMSO")))
+colnames(tmp) <- paste0("C162_vs_DMSO_", colnames(tmp))
+data.1 <- cbind(data.1, tmp)
+tmp <- as.data.frame(results(dds, contrast=c("Condition", "C162+Lip" , "DMSO")))
+colnames(tmp) <- paste0("C162+Lip_vs_DMSO_", colnames(tmp))
+data.1 <- cbind(data.1, tmp)
+tmp <- as.data.frame(results(dds, contrast=c("Condition", "C162+Lip" , "C162")))
+colnames(tmp) <- paste0("C162+Lip_vs_C162_", colnames(tmp))
+data.1 <- cbind(data.1, tmp)
+tmp <- as.data.frame(results(dds, contrast=c("Condition", "ISO+Lip", "DMSO+Lip")))
+colnames(tmp) <- paste0("ISO+Lip_vs_DMSO+Lip_", colnames(tmp))
+data.1 <- cbind(data.1, tmp)
+
+#kmeans clustering (Taking only genes which are induced comparing DMSO with ISO) 
+c <- data.1[ data.1$ISO_vs_DMSO_padj<0.05 & data.1$ISO_vs_DMSO_log2FoldChange>1,] #Here, DE == 5% FDR and at least two fold change (log2FC > 1)
+c <- c[,c("rlog_average_DMSO", "rlog_average_DMSO+Lip", "rlog_average_ISO", "rlog_average_ISO+Lip")]
+par(mfrow=c(3,3), mar=c(2,2,2,2))
+Sig_Cluster_Scaled <-t(scale(t(c)))
+no.cluster_sig <- 4
+km_Sig <- kmeans(Sig_Cluster_Scaled, no.cluster_sig, iter.max=300, nstart=100)
+for(i in 1:no.cluster_sig) {
+  tmp_sig <- Sig_Cluster_Scaled[km_Sig$cluster == i,]
+  mycol <- rgb(0.5,0,0.5,0.2)
+  plot(0,0,pch=' ', xlim=c(1,4), ylim=c(-3,3), xlab="", ylab="", yaxt="n", xaxt="n")
+  
+  for(j in 1:dim(tmp_sig)[1]){
+    lines(1:4, tmp_sig[j,], col=mycol)
+  }
+  lines(1:4, apply(tmp_sig,2, median), lwd=3)
+  axis(2, at=c(-3,0,3), lab=c(-3,0,3), cex.axis=1)
+  axis(1, at=c(1:4), lab=FALSE)  
+}
+
+#Extracting genes from each cluster
+Activated_cluster <- as.data.frame(km_Sig$cluster) 
+Activated_cluster$Cluster_Nr <- Activated_cluster[,1]
+
+#How many genes in each cluster:
+nrow(Activated_cluster[ Activated_cluster$Cluster_Nr == 1,]) #Activated cluster 1 (143)
+nrow(Activated_cluster[ Activated_cluster$Cluster_Nr == 2,]) #Activated cluster 2 (105)
+nrow(Activated_cluster[ Activated_cluster$Cluster_Nr == 3,]) #Activated cluster 3 (192)
+nrow(Activated_cluster[ Activated_cluster$Cluster_Nr == 4,]) #Activated cluster 4 (179)
+
+#Total number of genes in the Activated cluster:
+nrow(Activated_cluster) #(619)
+
+# Merging cluster info with all other info
+Activated_cluster <- merge(Activated_cluster,data.1, by="row.names") 
+rownames(Activated_cluster) <- Activated_cluster$Row.names
+heat <- matrix(nrow=1, ncol=ncol(Activated_cluster))
+colnames(heat) <- colnames(Activated_cluster)
+
+#Making a loop which takes each cluster, and orders the genes based on fold change between ISO and DMSO conditions
+for(i in 1:4){
+  tmp <- Activated_cluster[ Activated_cluster$Cluster_Nr == i,]
+  tmp <- tmp[order(tmp$ISO_vs_DMSO_log2FoldChange),]
+  heat <- rbind(heat, tmp)
+}
+
+#Taking rlog values for each replicate, and drawing a heatmap 
+heat <- heat[,c("rlog_DMSO_a", "rlog_DMSO_b", "rlog_DMSO_c", "rlog_DMSO+Lip_a", "rlog_DMSO+Lip_b", "rlog_DMSO+Lip_c", "rlog_ISO_a", "rlog_ISO_b", "rlog_ISO_c", "rlog_ISO+Lip_a", "rlog_ISO+Lip_b", "rlog_ISO+Lip_c", "rlog_C162_a", "rlog_C162_b" , "rlog_C162_c", "rlog_C162+Lip_a", "rlog_C162+Lip_b", "rlog_C162+Lip_c")]
+
+
+#Doing same thing for repressed genes
+c <- data.1[ data.1$ISO_vs_DMSO_padj<0.05 & data.1$ISO_vs_DMSO_log2FoldChange< -1,] 
+c <- c[,c("rlog_average_DMSO", "rlog_average_DMSO+Lip", "rlog_average_ISO", "rlog_average_ISO+Lip")]
+
+par(mfrow=c(3,3), mar=c(2,2,2,2))
+Sig_Cluster_Scaled <-t(scale(t(c)))
+no.cluster_sig <- 3
+km_Sig <- kmeans(Sig_Cluster_Scaled, no.cluster_sig, iter.max=300, nstart=100)
+
+for(i in 1:no.cluster_sig) {
+  tmp_sig <- Sig_Cluster_Scaled[km_Sig$cluster == i,]
+  mycol <- rgb(0.5,0,0.5,0.2)
+  plot(0,0,pch=' ', xlim=c(1,4), ylim=c(-3,3), xlab="", ylab="", yaxt="n", xaxt="n")
+  
+  for(j in 1:dim(tmp_sig)[1]){
+    lines(1:4, tmp_sig[j,], col=mycol)
+  }
+  lines(1:4, apply(tmp_sig,2, median), lwd=3)
+  axis(2, at=c(-3,0,3), lab=c(-3,0,3), cex.axis=1)
+  axis(1, at=c(1:4), lab=FALSE)  
+}
+
+
+Repressed_cluster <- as.data.frame(km_Sig$cluster)
+Repressed_cluster$Cluster_Nr <- Repressed_cluster[,1]
+Repressed_cluster <- merge(Repressed_cluster,data.1, by="row.names")
+rownames(Repressed_cluster) <- Repressed_cluster$Row.names
+
+#How many genes in each cluster:
+nrow(Repressed_cluster[ Repressed_cluster$Cluster_Nr == 1,]) #Repressed cluster 1 (234)
+nrow(Repressed_cluster[ Repressed_cluster$Cluster_Nr == 2,]) #Repressed cluster 2 (210)
+nrow(Repressed_cluster[ Repressed_cluster$Cluster_Nr == 3,]) #Repressed cluster 3 (49)
+
+#Total number of genes in the repressed cluster:
+nrow(Repressed_cluster) #(493)
+
+
+heat.r <- matrix(nrow=1, ncol=ncol(Repressed_cluster))
+colnames(heat.r) <- colnames(Repressed_cluster)
+
+for(i in 1:4){
+  tmp <- Repressed_cluster[ Repressed_cluster$Cluster_Nr == i,]
+  tmp <- tmp[order(tmp$ISO_vs_DMSO_log2FoldChange),]
+  heat.r <- rbind(heat.r, tmp)
+}
+
+heat.r <- heat.r[,c("rlog_DMSO_a", "rlog_DMSO_b", "rlog_DMSO_c", "rlog_DMSO+Lip_a", "rlog_DMSO+Lip_b", "rlog_DMSO+Lip_c", "rlog_ISO_a", "rlog_ISO_b", "rlog_ISO_c", "rlog_ISO+Lip_a", "rlog_ISO+Lip_b", "rlog_ISO+Lip_c", "rlog_C162_a", "rlog_C162_b", "rlog_C162_c", "rlog_C162+Lip_a", "rlog_C162+Lip_b", "rlog_C162+Lip_c")]
+
+
+# Putting together the two dataframes containing rlog values for induced repressed genes for a heatmap 
+heat.1 <- rbind(heat,heat.r)
+heat.1 <- t(scale(t(heat.1)))
+
+
+#Saturating it a bit. So all genes wich a scaled rlog value greater than 2.5 should just be viewed a 2.5.
+heat.1[heat.1>2.5] <- 2.5  
+
+# Everything lower than -2 should just be called -2
+heat.1[heat.1< -2] <- -2 
+
+#Choosing the colors. 
+col<- colorRampPalette(c("red", "white", "blue"))(256) 
+
+#Making the heatmap
+library(pheatmap)
+pheatmap(heat.1, scale="none", cluster_rows = FALSE, cluster_cols = FALSE,  gaps_row = NULL)
