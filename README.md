@@ -1,7 +1,29 @@
 # Lipolysis-regulates-major-transcriptional-programs-in-brown-adipocytes
 Lipolysis regulates major transcriptional programs in brown adipocytes
 
-This is a repository for the Nature Commn. paper "Lipolysis regulates major transcriptional programs in brown adipocytes". Here I have included my codes for alignment, peak calling, R studio analysis etc. 
+Scripts for reproduction of manuscript figures
+The scripts in this repository contains major codes that was run to create the figures in the manuscript.
+Please note that some of the algorithms are non-deterministic, which means that results vary slightly from run to run.Due to the non-deterministic nature, your figures may not look exactly like the figures in the paper.
+
+Lasse K. Markussen1,2,3, Elizabeth A. Rondini4, Olivia Sveidahl Johansen2,5,6, Jesper G. S. Madsen1,3, Elahu G. Sustarsic5, Ann-Britt Marcher1,2,3 Jacob B. Hansen7, Zachary Gerhart-Hines2,5,6,James G. Granneman4* & Susanne Mandrup1,2,3*
+
+1Department of Biochemistry and Molecular Biology, University of Southern Denmark, Odense, DK                                          
+2Novo Nordisk Foundation Center for Adipocyte Signaling (AdipoSign), Odense, DK
+3Center for Functional Genomics and Tissue Plasticity (ATLAS), Odense, DK
+4Center for Molecular Medicine and Genetics, Wayne State University, Detroit, US     
+5Novo Nordisk Foundation Center for Basic Metabolic Research, University of Copenhagen, Copenhagen, DK 
+6Embark Biotech ApS, Copenhagen, DK					              
+6Center for Functional Genomics and Tissue Plasticity (ATLAS), Odense, DK
+7Department of Biology, University of Copenhagen, Copenhagen, DK
+
+*Correspondence toThese authors contributed equally: James G. Granneman (J.G.G) (jgranne@med.wayne.edu), Susanne Mandrup(S.M.) (s.mandrup@bmb.sdu.dk)
+
+
+Summary:
+β-Adrenergic signaling is a core regulator of brown adipocyte function stimulating both lipolysis and transcription of thermogenic genes, thereby expanding the capacity for oxidative metabolism. Here we have used pharmacological inhibitors and a novel direct activator of lipolysis to acutely modulate the activity of lipases, thereby enabling us to uncover lipolysis-dependent signaling pathways downstream of β-adrenergic signaling in cultured brown adipocytes. We show that induction of lipolysis leads to acute induction of several gene programs and is required for transcriptional regulation by β-adrenergic signals. Using machine-learning algorithms to infer causal transcription factors, we show that PPARs are key mediators of lipolysis-induced activation of genes involved in lipid metabolism and thermogenesis. Importantly, lipolysis also activates the unfolded protein response and regulates the core circadian transcriptional machinery independently of PPARs. Our results demonstrate that lipolysis generates important metabolic signals that exert profound pleiotropic effects on cultured brown adipocyte transcription and function.
+
+
+
 
 RNA extraction, cDNA synthesis and quantitative real-time PCR			            
 RNA extraction, cDNA synthesis and quantitative real-time PCR (qPCR) were performed as previously described 67. Briefly, total RNA was harvested using TRIzol reagent and isolated using the chloroform-isopropanol method. cDNA was transcribed using the QuantiTect Reverse Transcription Kit (Qiagen, #205311). qPCR was conducted using FastStart Essential DNA Green Master Mix (Roche, #06924204001) and the reaction was performed using LightCycler 480 Instrument II (Roche). Data were normalized to transcript levels of transcription factor II B (Tfiib). All primer sequences can be provided upon request. 
